@@ -63,7 +63,9 @@ namespace {
         if (key == "instancepath") {
             config.instancePath = normalizePath(value);
         } else if (key == "outputpath") {
-            config.outputPath = normalizePath(value);
+            // Deprecated.
+            // Results are now written under resultsDirectory.
+            // This key is ignored so older config files do not crash.
         } else if (key == "optimalpath") {
             config.optimalPath = normalizePath(value);
         } else if (key == "resultsdirectory" || key == "resultsdir") {
@@ -94,9 +96,13 @@ namespace {
             config.aco.useTwoOpt = parseBool(value);
         } else if (key == "localsearch") {
             const std::string normalizedValue = normalizeKey(value);
-            if (normalizedValue == "none" || normalizedValue == "off" || normalizedValue == "false" || normalizedValue == "0") {
+
+            if (normalizedValue == "none" || normalizedValue == "off" ||
+                normalizedValue == "false" || normalizedValue == "0") {
                 config.aco.useTwoOpt = false;
-            } else if (normalizedValue == "twoopt" || normalizedValue == "2opt" || normalizedValue == "2-opt") {
+            } else if (normalizedValue == "twoopt" ||
+                       normalizedValue == "2opt" ||
+                       normalizedValue == "2-opt") {
                 config.aco.useTwoOpt = true;
             } else {
                 throw std::runtime_error("Unknown localSearch value: " + value);
@@ -121,6 +127,7 @@ AppConfig readConfig(const std::string& filePath) {
 
     while (std::getline(file, line)) {
         ++lineNumber;
+
         line = trim(removeInlineComment(line));
         if (line.empty()) {
             continue;
@@ -130,20 +137,25 @@ AppConfig readConfig(const std::string& filePath) {
         if (separator == std::string::npos) {
             separator = line.find(':');
         }
+
         if (separator == std::string::npos) {
             throw std::runtime_error("Invalid config line " + std::to_string(lineNumber) + ": " + line);
         }
 
         const std::string key = line.substr(0, separator);
         const std::string value = line.substr(separator + 1);
+
         setConfigValue(config, key, value);
     }
 
     if (config.instancePath.empty()) {
         throw std::runtime_error("Config must contain instancePath.");
     }
-    if (config.outputPath.empty()) {
-        throw std::runtime_error("Config must contain outputPath.");
+    if (config.optimalPath.empty()) {
+        throw std::runtime_error("Config must contain optimalPath.");
+    }
+    if (config.resultsDirectory.empty()) {
+        throw std::runtime_error("Config must contain resultsDirectory.");
     }
     if (config.aco.ants < 0) {
         throw std::runtime_error("ants must be >= 0. Use ants = 0 to set ants = number of cities.");
@@ -171,6 +183,7 @@ AppConfig readConfig(const std::string& filePath) {
     }
 
     validatePheromoneSettings(config.aco.mode);
+
     return config;
 }
 
@@ -188,8 +201,6 @@ void validateConfigAfterInstanceLoad(const AppConfig& config, const TSPInstance&
     const double bytesPerSquareMatrix = n * n * static_cast<double>(sizeof(int));
     const double pheromoneBytes = n * n * static_cast<double>(sizeof(float));
 
-    // Approximation for the biggest structures kept during a run:
-    // distanceMatrix, sortedNeighbors, sortedInNeighbors and pheromone matrix.
     const double estimatedBytes = (3.0 * bytesPerSquareMatrix) + pheromoneBytes;
     constexpr double warningLimitBytes = 512.0 * 1024.0 * 1024.0;
 
@@ -213,6 +224,7 @@ std::unordered_map<std::string, int> readOptimalValues(const std::string& filePa
 
     while (std::getline(file, line)) {
         ++lineNumber;
+
         line = trim(removeInlineComment(line));
         if (line.empty()) {
             continue;
@@ -222,12 +234,14 @@ std::unordered_map<std::string, int> readOptimalValues(const std::string& filePa
         if (separator == std::string::npos) {
             separator = line.find('=');
         }
+
         if (separator == std::string::npos) {
             throw std::runtime_error("Invalid optimal file line " + std::to_string(lineNumber) + ": " + line);
         }
 
         std::string name = trim(line.substr(0, separator));
         const int cost = std::stoi(trim(line.substr(separator + 1)));
+
         values[name] = cost;
         values[getFileNameWithoutExtension(name)] = cost;
     }

@@ -40,9 +40,13 @@ struct AlgorithmResult {
     std::vector<int> bestPath;
 };
 
-void writeResultCsvHeaderIfNeeded(const std::string& filePath);
-void appendResultToCsv(const std::string& filePath, const AlgorithmResult& result);
-void appendAggregateToCsv(const std::string& filePath, const std::vector<AlgorithmResult>& results);
-void writeHistoryToCsv(const std::string& filePath, const std::vector<ACOHistoryEntry>& history);
+void appendResultToCsv(const std::string& resultsDirectory, const AlgorithmResult& result);
+void appendAggregateToCsv(const std::string& resultsDirectory, const std::vector<AlgorithmResult>& results);
+
+std::string writeHistoryToCsv(
+        const std::string& resultsDirectory,
+        const AlgorithmResult& result,
+        const std::vector<ACOHistoryEntry>& history
+);
 
 #endif // PEA4_WRITER_H
