@@ -117,7 +117,6 @@ int main(int argc, char** argv) {
             std::cout << "Time [ms]: " << solution.timeMs << "\n";
             std::cout << "Iterations: " << solution.iterations << "\n";
             std::cout << "Stop reason: " << solution.stopReason << "\n";
-            std::cout << "Path: " << pathToString(solution.path, instance) << "\n";
             std::cout << "History saved to: " << historyPath << "\n";
         }
 

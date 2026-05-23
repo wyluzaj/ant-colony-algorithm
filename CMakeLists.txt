@@ -18,3 +18,11 @@ add_executable(aco_tsp
 target_include_directories(aco_tsp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+if (MINGW)
+    target_link_options(aco_tsp PRIVATE
+            -static
+            -static-libgcc
+            -static-libstdc++
+    )
+endif()

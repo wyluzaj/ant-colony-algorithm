@@ -2,3 +2,5 @@ cmake-build-debug/
 build/
 .idea/
 config/tests.txt
+venv/
+scripts/
