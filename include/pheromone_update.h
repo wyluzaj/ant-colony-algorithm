@@ -13,11 +13,6 @@ enum class PheromoneUpdateMode {
     CAS     // cycle ant system: delta = Q / L(k)
 };
 
-enum class PheromoneDepositTiming {
-    AfterMove,
-    AfterTour
-};
-
 struct AntTour {
     std::vector<int> path;
     int cost = 0;
@@ -49,10 +44,7 @@ struct PheromoneMatrix {
 std::string pheromoneUpdateModeToString(PheromoneUpdateMode mode);
 PheromoneUpdateMode pheromoneUpdateModeFromString(const std::string& text);
 
-std::string pheromoneDepositTimingToString(PheromoneDepositTiming timing);
-PheromoneDepositTiming pheromoneDepositTimingFromString(const std::string& text);
-
-void validatePheromoneSettings(PheromoneUpdateMode mode, PheromoneDepositTiming timing);
+void validatePheromoneSettings(PheromoneUpdateMode mode);
 
 void evaporatePheromones(
         PheromoneMatrix& pheromones,

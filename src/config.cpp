@@ -100,8 +100,6 @@ namespace {
             } else {
                 throw std::runtime_error("Unknown localSearch value: " + value);
             }
-        } else if (key == "deposittiming" || key == "depositetiming") {
-            config.aco.depositTiming = pheromoneDepositTimingFromString(value);
         } else if (key == "mode" || key == "updatemode") {
             config.aco.mode = pheromoneUpdateModeFromString(value);
         } else {
@@ -162,7 +160,7 @@ AppConfig readConfig(const std::string& filePath) {
         throw std::runtime_error("r must be in range [0, 1].");
     }
 
-    validatePheromoneSettings(config.aco.mode, config.aco.depositTiming);
+    validatePheromoneSettings(config.aco.mode);
     return config;
 }
 

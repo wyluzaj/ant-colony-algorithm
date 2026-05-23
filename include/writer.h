@@ -35,7 +35,6 @@ struct AlgorithmResult {
     double depositAmount = 0.0;
     bool useTwoOpt = false;
 
-    std::string depositTiming;
     std::string mode;
 
     std::vector<int> bestPath;

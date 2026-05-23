@@ -24,7 +24,6 @@ struct ACOParameters {
     double depositAmount = 1.0;    // Q used in DAS/QAS/CAS
     bool useTwoOpt = false;        // optional local search after each completed ant tour
 
-    PheromoneDepositTiming depositTiming = PheromoneDepositTiming::AfterTour;
     PheromoneUpdateMode mode = PheromoneUpdateMode::CAS;
 };
 

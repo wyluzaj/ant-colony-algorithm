@@ -68,42 +68,15 @@ PheromoneUpdateMode pheromoneUpdateModeFromString(const std::string& text) {
     throw std::runtime_error("Unknown pheromone update mode: " + text);
 }
 
-std::string pheromoneDepositTimingToString(PheromoneDepositTiming timing) {
-    switch (timing) {
-        case PheromoneDepositTiming::AfterMove:
-            return "AfterMove";
-        case PheromoneDepositTiming::AfterTour:
-            return "AfterTour";
-    }
-    return "Unknown";
-}
-
-PheromoneDepositTiming pheromoneDepositTimingFromString(const std::string& text) {
-    const std::string value = normalizeText(text);
-
-    if (value == "aftermove" || value == "move" || value == "edge") {
-        return PheromoneDepositTiming::AfterMove;
-    }
-    if (value == "aftertour" || value == "tour" || value == "cycle") {
-        return PheromoneDepositTiming::AfterTour;
+void validatePheromoneSettings(PheromoneUpdateMode mode) {
+    switch (mode) {
+        case PheromoneUpdateMode::DAS:
+        case PheromoneUpdateMode::QAS:
+        case PheromoneUpdateMode::CAS:
+            return;
     }
 
-    throw std::runtime_error("Unknown pheromone deposit timing: " + text);
-}
-
-void validatePheromoneSettings(PheromoneUpdateMode mode, PheromoneDepositTiming timing) {
-    if (mode == PheromoneUpdateMode::CAS && timing == PheromoneDepositTiming::AfterMove) {
-        throw std::runtime_error(
-                "CAS updates pheromone after a completed tour. Use depositTiming = afterTour for mode = CAS."
-        );
-    }
-
-    if ((mode == PheromoneUpdateMode::DAS || mode == PheromoneUpdateMode::QAS) &&
-        timing == PheromoneDepositTiming::AfterTour) {
-        throw std::runtime_error(
-                "DAS and QAS update pheromone after each move. Use depositTiming = afterMove for mode = DAS/QAS."
-        );
-    }
+    throw std::runtime_error("Unknown pheromone update mode.");
 }
 
 void evaporatePheromones(PheromoneMatrix& pheromones, double evaporationRate) {
