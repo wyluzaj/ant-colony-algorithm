@@ -1,6 +1,8 @@
 #ifndef PEA4_WRITER_H
 #define PEA4_WRITER_H
 
+#include "ant_colony.h"
+
 #include <string>
 #include <vector>
 
@@ -28,7 +30,7 @@ struct AlgorithmResult {
     double alpha = 0.0;
     double beta = 0.0;
     double r = 0.0;
-    double configuredInitialPheromone = 0.0;
+    double initialPheromone = 0.0;
     double effectiveInitialPheromone = 0.0;
     double depositAmount = 0.0;
 
@@ -41,5 +43,6 @@ struct AlgorithmResult {
 void writeResultCsvHeaderIfNeeded(const std::string& filePath);
 void appendResultToCsv(const std::string& filePath, const AlgorithmResult& result);
 void appendAggregateToCsv(const std::string& filePath, const std::vector<AlgorithmResult>& results);
+void writeHistoryToCsv(const std::string& filePath, const std::vector<ACOHistoryEntry>& history);
 
 #endif // PEA4_WRITER_H

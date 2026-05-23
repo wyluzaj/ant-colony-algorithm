@@ -35,7 +35,7 @@ namespace {
         return std::filesystem::file_size(filePath) > 0;
     }
 
-    double mean(std::vector<double> values) {
+    double mean(const std::vector<double>& values) {
         if (values.empty()) {
             return 0.0;
         }
@@ -85,7 +85,7 @@ namespace {
         }
 
         file << "instance;algorithm;dimension;runs;ants;max_time_seconds;stop_on_target_error;target_error;"
-             << "alpha;beta;r;configured_initial_pheromone;effective_initial_pheromone;deposit_amount;"
+             << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;deposit_amount;"
              << "deposit_timing;mode;optimal_cost;"
              << "mean_cost;median_cost;best_cost;worst_cost;"
              << "mean_time_ms;median_time_ms;best_time_ms;worst_time_ms;"
@@ -109,7 +109,7 @@ void writeResultCsvHeaderIfNeeded(const std::string& filePath) {
 
     file << "instance;algorithm;dimension;run_number;seed;best_cost;optimal_cost;relative_error_percent;"
          << "time_ms;iterations;stop_reason;ants;runs;max_time_seconds;stop_on_target_error;target_error;"
-         << "alpha;beta;r;configured_initial_pheromone;effective_initial_pheromone;"
+         << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;"
          << "deposit_amount;deposit_timing;mode;path\n";
 }
 
@@ -141,7 +141,7 @@ void appendResultToCsv(const std::string& filePath, const AlgorithmResult& resul
          << result.alpha << ';'
          << result.beta << ';'
          << result.r << ';'
-         << result.configuredInitialPheromone << ';'
+         << result.initialPheromone << ';'
          << result.effectiveInitialPheromone << ';'
          << result.depositAmount << ';'
          << result.depositTiming << ';'
@@ -198,7 +198,7 @@ void appendAggregateToCsv(const std::string& filePath, const std::vector<Algorit
          << first.alpha << ';'
          << first.beta << ';'
          << first.r << ';'
-         << first.configuredInitialPheromone << ';'
+         << first.initialPheromone << ';'
          << first.effectiveInitialPheromone << ';'
          << first.depositAmount << ';'
          << first.depositTiming << ';'
@@ -222,4 +222,22 @@ void appendAggregateToCsv(const std::string& filePath, const std::vector<Algorit
          << maxValue(iterations) << ';'
          << targetSuccessCount << ';'
          << targetSuccessRate << '\n';
+}
+
+void writeHistoryToCsv(const std::string& filePath, const std::vector<ACOHistoryEntry>& history) {
+    createParentDirectoryIfNeeded(filePath);
+
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to create history output file: " + filePath);
+    }
+
+    file << "iteration;time_ms;best_cost;relative_error_percent\n";
+
+    for (const ACOHistoryEntry& entry : history) {
+        file << entry.iteration << ';'
+             << entry.timeMs << ';'
+             << entry.bestCost << ';'
+             << entry.relativeError << '\n';
+    }
 }
