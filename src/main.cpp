@@ -5,8 +5,30 @@
 #include "writer.h"
 
 #include <exception>
+#include <filesystem>
 #include <iostream>
+#include <random>
 #include <string>
+#include <vector>
+
+namespace {
+    std::string resultFileForInstance(const std::string& resultsDirectory, const std::string& instanceName) {
+        const std::filesystem::path path = std::filesystem::path(resultsDirectory) / "wyniki" / (instanceName + ".csv");
+        return path.string();
+    }
+
+    std::string aggregateFilePath(const std::string& resultsDirectory) {
+        const std::filesystem::path path = std::filesystem::path(resultsDirectory) / "aggregate" / "aco_aggregate.csv";
+        return path.string();
+    }
+
+    unsigned int seedForRun(unsigned int configuredSeed, int runIndex, std::random_device& randomDevice) {
+        if (configuredSeed == 0) {
+            return randomDevice();
+        }
+        return configuredSeed + static_cast<unsigned int>(runIndex);
+    }
+}
 
 int main(int argc, char** argv) {
     try {
@@ -30,46 +52,83 @@ int main(int argc, char** argv) {
         }
 
         const int antsCount = config.aco.ants <= 0 ? instance.dimension : config.aco.ants;
+        const std::string instanceResultPath = resultFileForInstance(config.resultsDirectory, instance.name);
+        const std::string aggregatePath = aggregateFilePath(config.resultsDirectory);
 
         std::cout << "Instance: " << instance.name << "\n";
         std::cout << "Path: " << config.instancePath << "\n";
         std::cout << "Dimension: " << instance.dimension << "\n";
         std::cout << "Optimal cost: " << optimalCost << "\n";
         std::cout << "Ants: " << antsCount << "\n";
+        std::cout << "Runs: " << config.aco.runs << "\n";
+        std::cout << "Seed: "
+                  << (config.aco.seed == 0 ? std::string("random for each run") : std::to_string(config.aco.seed))
+                  << "\n";
         std::cout << "Mode: " << pheromoneUpdateModeToString(config.aco.mode) << "\n";
         std::cout << "Deposit timing: " << pheromoneDepositTimingToString(config.aco.depositTiming) << "\n";
 
-        ACOSolution solution = runAntColony(instance, config.aco, optimalCost);
+        std::vector<AlgorithmResult> runResults;
+        runResults.reserve(config.aco.runs);
+        std::random_device randomDevice;
 
-        std::cout << "Best cost: " << solution.cost << "\n";
-        std::cout << "Relative error [%]: " << solution.relativeError << "\n";
-        std::cout << "Time [ms]: " << solution.timeMs << "\n";
-        std::cout << "Iterations: " << solution.iterations << "\n";
-        std::cout << "Stop reason: " << solution.stopReason << "\n";
-        std::cout << "Path: " << pathToString(solution.path, instance) << "\n";
+        for (int runIndex = 0; runIndex < config.aco.runs; ++runIndex) {
+            const int runNumber = runIndex + 1;
+            const unsigned int runSeed = seedForRun(config.aco.seed, runIndex, randomDevice);
 
-        appendResultToCsv(config.outputPath, AlgorithmResult{
-                instance.name,
-                "ACO",
-                instance.dimension,
-                solution.cost,
-                optimalCost,
-                solution.relativeError,
-                solution.timeMs,
-                solution.iterations,
-                solution.stopReason,
-                antsCount,
-                config.aco.alpha,
-                config.aco.beta,
-                config.aco.r,
-                config.aco.initialPheromone,
-                config.aco.depositAmount,
-                pheromoneDepositTimingToString(config.aco.depositTiming),
-                pheromoneUpdateModeToString(config.aco.mode),
-                solution.path
-        });
+            std::cout << "\nRun " << runNumber << "/" << config.aco.runs << ", seed: " << runSeed << "\n";
 
-        std::cout << "Saved result to: " << config.outputPath << "\n";
+            ACOSolution solution = runAntColony(instance, config.aco, optimalCost, runSeed);
+
+            std::cout << "Best cost: " << solution.cost << "\n";
+            std::cout << "Relative error [%]: " << solution.relativeError << "\n";
+            std::cout << "Time [ms]: " << solution.timeMs << "\n";
+            std::cout << "Iterations: " << solution.iterations << "\n";
+            std::cout << "Stop reason: " << solution.stopReason << "\n";
+            std::cout << "Path: " << pathToString(solution.path, instance) << "\n";
+
+            AlgorithmResult result;
+            result.instanceName = instance.name;
+            result.algorithmName = "ACO";
+            result.dimension = instance.dimension;
+
+            result.runNumber = runNumber;
+            result.seed = runSeed;
+
+            result.bestCost = solution.cost;
+            result.optimalCost = optimalCost;
+            result.relativeError = solution.relativeError;
+            result.timeMs = solution.timeMs;
+            result.iterations = solution.iterations;
+            result.stopReason = solution.stopReason;
+
+            result.ants = antsCount;
+            result.runs = config.aco.runs;
+            result.maxTimeSeconds = config.aco.maxTimeSeconds;
+            result.stopOnTargetError = config.aco.stopOnTargetError;
+            result.targetError = config.aco.targetError;
+
+            result.alpha = config.aco.alpha;
+            result.beta = config.aco.beta;
+            result.r = config.aco.r;
+            result.configuredInitialPheromone = config.aco.initialPheromone;
+            result.effectiveInitialPheromone = solution.effectiveInitialPheromone;
+            result.depositAmount = config.aco.depositAmount;
+
+            result.depositTiming = pheromoneDepositTimingToString(config.aco.depositTiming);
+            result.mode = pheromoneUpdateModeToString(config.aco.mode);
+
+            result.bestPath = solution.path;
+
+            appendResultToCsv(instanceResultPath, result);
+            appendResultToCsv(config.outputPath, result);
+            runResults.push_back(std::move(result));
+        }
+
+        appendAggregateToCsv(aggregatePath, runResults);
+
+        std::cout << "\nSaved run results to: " << instanceResultPath << "\n";
+        std::cout << "Saved aggregate summary to: " << aggregatePath << "\n";
+        std::cout << "Saved backward-compatible CSV to: " << config.outputPath << "\n";
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;

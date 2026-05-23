@@ -17,6 +17,20 @@ outputPath = results/aco_results.csv
 # ants = 0 means ants = number of cities.
 ants = 0
 
+# Number of independent algorithm runs for this one config.
+# Use several runs because ACO is randomized.
+runs = 10
+
+# Random generator seed.
+# seed = 0 means random seed at the beginning of every run.
+# seed = 12345 means run 1 uses 12345, run 2 uses 12346, etc.
+seed = 0
+
+# Base directory for detailed and aggregate results.
+# Per-run results: results/wyniki/<instance>.csv
+# Aggregate results: results/aggregate/aco_aggregate.csv
+resultsDirectory = results
+
 # Maximum running time in seconds.
 maxTimeSeconds = 10
 
