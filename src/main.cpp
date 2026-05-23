@@ -93,6 +93,8 @@ int main(int argc, char** argv) {
         AppConfig config = readConfig(configPath);
 
         TSPInstance instance = readTSPInstance(config.instancePath);
+        validateConfigAfterInstanceLoad(config, instance);
+
         const auto optimalValues = readOptimalValues(config.optimalPath);
         const int optimalCost = findOptimalCost(optimalValues, config.instancePath, instance.name);
 

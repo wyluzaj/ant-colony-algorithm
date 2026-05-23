@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "ant_colony.h"
+#include "tsp_instance.h"
 
 struct AppConfig {
     std::string instancePath;
@@ -15,6 +16,8 @@ struct AppConfig {
 };
 
 AppConfig readConfig(const std::string& filePath);
+void validateConfigAfterInstanceLoad(const AppConfig& config, const TSPInstance& instance);
+
 std::unordered_map<std::string, int> readOptimalValues(const std::string& filePath);
 int findOptimalCost(
         const std::unordered_map<std::string, int>& optimalValues,
