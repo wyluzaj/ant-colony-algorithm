@@ -27,6 +27,13 @@ struct ACOParameters {
     PheromoneUpdateMode mode = PheromoneUpdateMode::CAS;
 };
 
+struct ACOHistoryEntry {
+    int iteration = 0;
+    double timeMs = 0.0;
+    int bestCost = 0;
+    double relativeError = -1.0;
+};
+
 struct ACOSolution {
     std::vector<int> path;
     int cost = 0;
@@ -37,6 +44,7 @@ struct ACOSolution {
     std::string stopReason;
     unsigned int seed = 0;
     double effectiveInitialPheromone = 0.0;
+    std::vector<ACOHistoryEntry> history;
 };
 
 ACOSolution runAntColony(

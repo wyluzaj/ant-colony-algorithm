@@ -6,8 +6,10 @@
 
 #include <exception>
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -27,6 +29,54 @@ namespace {
             return randomDevice();
         }
         return configuredSeed + static_cast<unsigned int>(runIndex);
+    }
+
+    std::string safeToken(std::string value) {
+        for (char& c : value) {
+            if (c == '.' || c == ',' || c == ':' || c == ';' || c == '/' || c == '\\' || c == ' ') {
+                c = '_';
+            }
+        }
+        return value;
+    }
+
+    std::string doubleToken(double value) {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(3) << value;
+        return safeToken(oss.str());
+    }
+
+    std::string boolToken(bool value) {
+        return value ? "true" : "false";
+    }
+
+    std::string historyFileForRun(
+            const std::string& resultsDirectory,
+            const std::string& instanceName,
+            int runNumber,
+            unsigned int seed,
+            const ACOParameters& params
+    ) {
+        std::ostringstream fileName;
+
+        fileName << safeToken(instanceName)
+                 << "_run" << runNumber
+                 << "_seed" << seed
+                 << "_alpha" << doubleToken(params.alpha)
+                 << "_beta" << doubleToken(params.beta)
+                 << "_time" << doubleToken(params.maxTimeSeconds)
+                 << "_target" << boolToken(params.stopOnTargetError)
+                 << "_targetError" << doubleToken(params.targetError)
+                 << "_mode" << pheromoneUpdateModeToString(params.mode)
+                 << ".csv";
+
+        const std::filesystem::path path =
+                std::filesystem::path(resultsDirectory)
+                / "history"
+                / safeToken(instanceName)
+                / fileName.str();
+
+        return path.string();
     }
 }
 
@@ -79,12 +129,22 @@ int main(int argc, char** argv) {
 
             ACOSolution solution = runAntColony(instance, config.aco, optimalCost, runSeed);
 
+            const std::string historyPath = historyFileForRun(
+                    config.resultsDirectory,
+                    instance.name,
+                    runNumber,
+                    runSeed,
+                    config.aco
+            );
+            writeHistoryToCsv(historyPath, solution.history);
+
             std::cout << "Best cost: " << solution.cost << "\n";
             std::cout << "Relative error [%]: " << solution.relativeError << "\n";
             std::cout << "Time [ms]: " << solution.timeMs << "\n";
             std::cout << "Iterations: " << solution.iterations << "\n";
             std::cout << "Stop reason: " << solution.stopReason << "\n";
             std::cout << "Path: " << pathToString(solution.path, instance) << "\n";
+            std::cout << "History saved to: " << historyPath << "\n";
 
             AlgorithmResult result;
             result.instanceName = instance.name;
@@ -110,7 +170,7 @@ int main(int argc, char** argv) {
             result.alpha = config.aco.alpha;
             result.beta = config.aco.beta;
             result.r = config.aco.r;
-            result.configuredInitialPheromone = config.aco.initialPheromone;
+            result.initialPheromone = config.aco.initialPheromone;
             result.effectiveInitialPheromone = solution.effectiveInitialPheromone;
             result.depositAmount = config.aco.depositAmount;
 

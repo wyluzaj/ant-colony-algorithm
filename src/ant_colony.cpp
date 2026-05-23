@@ -288,13 +288,20 @@ ACOSolution runAntColony(
             }
         }
 
-        if (params.stopOnTargetError) {
-            bestSolution.optimalCost = optimalCost;
-            bestSolution.relativeError = calculateRelativeError(bestSolution.cost, optimalCost);
-            if (bestSolution.relativeError <= params.targetError) {
-                bestSolution.stopReason = "TargetErrorReached";
-                break;
-            }
+        bestSolution.optimalCost = optimalCost;
+        bestSolution.relativeError = calculateRelativeError(bestSolution.cost, optimalCost);
+
+        const auto currentTime = std::chrono::high_resolution_clock::now();
+        bestSolution.history.push_back({
+                                               bestSolution.iterations,
+                                               elapsedMilliseconds(start, currentTime),
+                                               bestSolution.cost,
+                                               bestSolution.relativeError
+                                       });
+
+        if (params.stopOnTargetError && bestSolution.relativeError <= params.targetError) {
+            bestSolution.stopReason = "TargetErrorReached";
+            break;
         }
     }
 
