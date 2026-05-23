@@ -67,6 +67,7 @@ namespace {
                  << "_time" << doubleToken(params.maxTimeSeconds)
                  << "_target" << boolToken(params.stopOnTargetError)
                  << "_targetError" << doubleToken(params.targetError)
+                 << "_twoOpt" << boolToken(params.useTwoOpt)
                  << "_mode" << pheromoneUpdateModeToString(params.mode)
                  << ".csv";
 
@@ -116,6 +117,7 @@ int main(int argc, char** argv) {
                   << "\n";
         std::cout << "Mode: " << pheromoneUpdateModeToString(config.aco.mode) << "\n";
         std::cout << "Deposit timing: " << pheromoneDepositTimingToString(config.aco.depositTiming) << "\n";
+        std::cout << "2-opt local search: " << (config.aco.useTwoOpt ? "enabled" : "disabled") << "\n";
 
         std::vector<AlgorithmResult> runResults;
         runResults.reserve(config.aco.runs);
@@ -173,6 +175,7 @@ int main(int argc, char** argv) {
             result.initialPheromone = config.aco.initialPheromone;
             result.effectiveInitialPheromone = solution.effectiveInitialPheromone;
             result.depositAmount = config.aco.depositAmount;
+            result.useTwoOpt = config.aco.useTwoOpt;
 
             result.depositTiming = pheromoneDepositTimingToString(config.aco.depositTiming);
             result.mode = pheromoneUpdateModeToString(config.aco.mode);

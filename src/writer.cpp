@@ -86,7 +86,7 @@ namespace {
 
         file << "instance;algorithm;dimension;runs;ants;max_time_seconds;stop_on_target_error;target_error;"
              << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;deposit_amount;"
-             << "deposit_timing;mode;optimal_cost;"
+             << "use_two_opt;deposit_timing;mode;optimal_cost;"
              << "mean_cost;median_cost;best_cost;worst_cost;"
              << "mean_time_ms;median_time_ms;best_time_ms;worst_time_ms;"
              << "mean_relative_error_percent;median_relative_error_percent;best_relative_error_percent;worst_relative_error_percent;"

@@ -57,6 +57,11 @@ r = 0.5
 # where Cnn is the best nearest-neighbour tour cost.
 initialPheromone = 0
 
+# Optional local search improvement after a complete tour is built by an ant.
+# useTwoOpt = false means pure ACO.
+# useTwoOpt = true means ACO + 2-opt local improvement.
+useTwoOpt = false
+
 # Pheromone deposit coefficient Q.
 # DAS: delta = Q
 # QAS: delta = Q / distance(i, j)

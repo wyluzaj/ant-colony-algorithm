@@ -89,6 +89,17 @@ namespace {
             config.aco.initialPheromone = std::stod(value);
         } else if (key == "depositamount") {
             config.aco.depositAmount = std::stod(value);
+        } else if (key == "usetwoopt" || key == "twoopt") {
+            config.aco.useTwoOpt = parseBool(value);
+        } else if (key == "localsearch") {
+            const std::string normalizedValue = normalizeKey(value);
+            if (normalizedValue == "none" || normalizedValue == "off" || normalizedValue == "false" || normalizedValue == "0") {
+                config.aco.useTwoOpt = false;
+            } else if (normalizedValue == "twoopt" || normalizedValue == "2opt" || normalizedValue == "2-opt") {
+                config.aco.useTwoOpt = true;
+            } else {
+                throw std::runtime_error("Unknown localSearch value: " + value);
+            }
         } else if (key == "deposittiming" || key == "depositetiming") {
             config.aco.depositTiming = pheromoneDepositTimingFromString(value);
         } else if (key == "mode" || key == "updatemode") {
