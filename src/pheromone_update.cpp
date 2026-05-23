@@ -25,7 +25,7 @@ namespace {
 
     void addPheromone(
             const TSPInstance& instance,
-            std::vector<std::vector<double>>& pheromones,
+            PheromoneMatrix& pheromones,
             int from,
             int to,
             double delta
@@ -33,9 +33,9 @@ namespace {
         validateCityIndex(instance, from);
         validateCityIndex(instance, to);
 
-        pheromones[from][to] += delta;
+        pheromones.ref(from, to) += static_cast<float>(delta);
         if (instance.symmetric) {
-            pheromones[to][from] += delta;
+            pheromones.ref(to, from) += static_cast<float>(delta);
         }
     }
 }
@@ -94,22 +94,23 @@ PheromoneDepositTiming pheromoneDepositTimingFromString(const std::string& text)
 void validatePheromoneSettings(PheromoneUpdateMode mode, PheromoneDepositTiming timing) {
     if (mode == PheromoneUpdateMode::CAS && timing == PheromoneDepositTiming::AfterMove) {
         throw std::runtime_error(
-                "CAS requires complete tour cost, so depositTiming must be AfterTour."
+                "CAS updates pheromone after a completed tour. Use depositTiming = afterTour for mode = CAS."
+        );
+    }
+
+    if ((mode == PheromoneUpdateMode::DAS || mode == PheromoneUpdateMode::QAS) &&
+        timing == PheromoneDepositTiming::AfterTour) {
+        throw std::runtime_error(
+                "DAS and QAS update pheromone after each move. Use depositTiming = afterMove for mode = DAS/QAS."
         );
     }
 }
 
-void evaporatePheromones(
-        std::vector<std::vector<double>>& pheromones,
-        double evaporationRate
-) {
-    if (evaporationRate < 0.0 || evaporationRate > 1.0) {
-        throw std::runtime_error("Evaporation rate r must be in range [0, 1].");
-    }
-
-    for (auto& row : pheromones) {
-        for (double& value : row) {
-            value *= (1.0 - evaporationRate);
+void evaporatePheromones(PheromoneMatrix& pheromones, double evaporationRate) {
+    for (float& value : pheromones.values) {
+        value *= static_cast<float>(1.0 - evaporationRate);
+        if (value < 1e-12f) {
+            value = 1e-12f;
         }
     }
 }
@@ -122,22 +123,19 @@ double calculatePheromoneDeltaForEdge(
         double depositAmount,
         PheromoneUpdateMode mode
 ) {
-    if (depositAmount <= 0.0) {
-        throw std::runtime_error("depositAmount must be greater than 0.");
-    }
+    validateCityIndex(instance, from);
+    validateCityIndex(instance, to);
 
     switch (mode) {
         case PheromoneUpdateMode::DAS:
             return depositAmount;
-
         case PheromoneUpdateMode::QAS: {
-            const int distance = instance.distanceMatrix[from][to];
+            const int distance = instance.distance(from, to);
             if (distance <= 0) {
                 return 0.0;
             }
             return depositAmount / static_cast<double>(distance);
         }
-
         case PheromoneUpdateMode::CAS:
             if (tourCost <= 0) {
                 return 0.0;
@@ -145,56 +143,52 @@ double calculatePheromoneDeltaForEdge(
             return depositAmount / static_cast<double>(tourCost);
     }
 
-    throw std::runtime_error("Unknown pheromone update mode.");
+    return 0.0;
 }
 
 void depositPheromoneOnEdge(
         const TSPInstance& instance,
-        std::vector<std::vector<double>>& pheromones,
+        PheromoneMatrix& pheromones,
         int from,
         int to,
         int tourCost,
         double depositAmount,
         PheromoneUpdateMode mode
 ) {
-    if (static_cast<int>(pheromones.size()) != instance.dimension) {
-        throw std::runtime_error("Invalid pheromone matrix size.");
-    }
-
-    const double delta = calculatePheromoneDeltaForEdge(
-            instance,
-            from,
-            to,
-            tourCost,
-            depositAmount,
-            mode
-    );
-
+    const double delta = calculatePheromoneDeltaForEdge(instance, from, to, tourCost, depositAmount, mode);
     addPheromone(instance, pheromones, from, to, delta);
 }
 
 void depositPheromoneOnTour(
         const TSPInstance& instance,
-        std::vector<std::vector<double>>& pheromones,
+        PheromoneMatrix& pheromones,
         const AntTour& antTour,
         double depositAmount,
         PheromoneUpdateMode mode
 ) {
-    if (static_cast<int>(antTour.path.size()) != instance.dimension) {
-        throw std::runtime_error("Ant tour must contain each city exactly once.");
+    if (antTour.path.empty()) {
+        return;
     }
 
-    for (int i = 0; i < instance.dimension; ++i) {
-        const int from = antTour.path[i];
-        const int to = antTour.path[(i + 1) % instance.dimension];
+    for (size_t i = 0; i + 1 < antTour.path.size(); ++i) {
         depositPheromoneOnEdge(
                 instance,
                 pheromones,
-                from,
-                to,
+                antTour.path[i],
+                antTour.path[i + 1],
                 antTour.cost,
                 depositAmount,
                 mode
         );
     }
+
+    depositPheromoneOnEdge(
+            instance,
+            pheromones,
+            antTour.path.back(),
+            antTour.path.front(),
+            antTour.cost,
+            depositAmount,
+            mode
+    );
 }

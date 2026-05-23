@@ -1,6 +1,7 @@
 #ifndef PEA4_PHEROMONE_UPDATE_H
 #define PEA4_PHEROMONE_UPDATE_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,29 @@ struct AntTour {
     int cost = 0;
 };
 
+struct PheromoneMatrix {
+    int dimension = 0;
+    std::vector<float> values;
+
+    PheromoneMatrix() = default;
+
+    PheromoneMatrix(int n, float initialValue)
+            : dimension(n), values(static_cast<std::size_t>(n) * static_cast<std::size_t>(n), initialValue) {}
+
+    [[nodiscard]] std::size_t index(int row, int column) const {
+        return static_cast<std::size_t>(row) * static_cast<std::size_t>(dimension) +
+               static_cast<std::size_t>(column);
+    }
+
+    [[nodiscard]] float at(int row, int column) const {
+        return values[index(row, column)];
+    }
+
+    float& ref(int row, int column) {
+        return values[index(row, column)];
+    }
+};
+
 std::string pheromoneUpdateModeToString(PheromoneUpdateMode mode);
 PheromoneUpdateMode pheromoneUpdateModeFromString(const std::string& text);
 
@@ -31,7 +55,7 @@ PheromoneDepositTiming pheromoneDepositTimingFromString(const std::string& text)
 void validatePheromoneSettings(PheromoneUpdateMode mode, PheromoneDepositTiming timing);
 
 void evaporatePheromones(
-        std::vector<std::vector<double>>& pheromones,
+        PheromoneMatrix& pheromones,
         double evaporationRate
 );
 
@@ -46,7 +70,7 @@ double calculatePheromoneDeltaForEdge(
 
 void depositPheromoneOnEdge(
         const TSPInstance& instance,
-        std::vector<std::vector<double>>& pheromones,
+        PheromoneMatrix& pheromones,
         int from,
         int to,
         int tourCost,
@@ -56,7 +80,7 @@ void depositPheromoneOnEdge(
 
 void depositPheromoneOnTour(
         const TSPInstance& instance,
-        std::vector<std::vector<double>>& pheromones,
+        PheromoneMatrix& pheromones,
         const AntTour& antTour,
         double depositAmount,
         PheromoneUpdateMode mode

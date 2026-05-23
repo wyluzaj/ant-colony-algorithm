@@ -26,8 +26,8 @@ namespace {
             int bestDistance = std::numeric_limits<int>::max();
 
             for (int candidate = 0; candidate < n; ++candidate) {
-                if (!visited[candidate] && instance.distanceMatrix[current][candidate] < bestDistance) {
-                    bestDistance = instance.distanceMatrix[current][candidate];
+                if (!visited[candidate] && instance.distance(current, candidate) < bestDistance) {
+                    bestDistance = instance.distance(current, candidate);
                     bestCity = candidate;
                 }
             }
@@ -66,17 +66,14 @@ namespace {
         return static_cast<double>(antsCount) / static_cast<double>(cnn);
     }
 
-    std::vector<std::vector<double>> initializePheromones(
+    PheromoneMatrix initializePheromones(
             const TSPInstance& instance,
             double effectiveInitialPheromone
     ) {
-        std::vector<std::vector<double>> pheromones(
-                instance.dimension,
-                std::vector<double>(instance.dimension, effectiveInitialPheromone)
-        );
+        PheromoneMatrix pheromones(instance.dimension, static_cast<float>(effectiveInitialPheromone));
 
         for (int i = 0; i < instance.dimension; ++i) {
-            pheromones[i][i] = 0.0;
+            pheromones.ref(i, i) = 0.0f;
         }
 
         return pheromones;
@@ -84,7 +81,7 @@ namespace {
 
     int chooseNextCity(
             const TSPInstance& instance,
-            const std::vector<std::vector<double>>& pheromones,
+            const PheromoneMatrix& pheromones,
             const std::vector<bool>& visited,
             int currentCity,
             double alpha,
@@ -102,12 +99,12 @@ namespace {
                 continue;
             }
 
-            const int distance = instance.distanceMatrix[currentCity][city];
+            const int distance = instance.distance(currentCity, city);
             if (distance <= 0) {
                 continue;
             }
 
-            const double tau = std::max(pheromones[currentCity][city], 1e-12);
+            const double tau = std::max(static_cast<double>(pheromones.at(currentCity, city)), 1e-12);
             const double eta = 1.0 / static_cast<double>(distance);
             const double weight = std::pow(tau, alpha) * std::pow(eta, beta);
 
@@ -144,7 +141,7 @@ namespace {
 
     AntTour buildAntTour(
             const TSPInstance& instance,
-            std::vector<std::vector<double>>& pheromones,
+            PheromoneMatrix& pheromones,
             const ACOParameters& params,
             std::mt19937& rng,
             int startCity,
@@ -210,7 +207,7 @@ namespace {
     bool isSymmetricDistanceMatrix(const TSPInstance& instance) {
         for (int i = 0; i < instance.dimension; ++i) {
             for (int j = i + 1; j < instance.dimension; ++j) {
-                if (instance.distanceMatrix[i][j] != instance.distanceMatrix[j][i]) {
+                if (instance.distance(i, j) != instance.distance(j, i)) {
                     return false;
                 }
             }
@@ -236,8 +233,8 @@ namespace {
                     const int c = tour.path[k];
                     const int d = tour.path[(k + 1) % n];
 
-                    const int removed = instance.distanceMatrix[a][b] + instance.distanceMatrix[c][d];
-                    const int added = instance.distanceMatrix[a][c] + instance.distanceMatrix[b][d];
+                    const int removed = instance.distance(a, b) + instance.distance(c, d);
+                    const int added = instance.distance(a, c) + instance.distance(b, d);
 
                     if (added < removed) {
                         std::reverse(tour.path.begin() + i, tour.path.begin() + k + 1);
@@ -324,7 +321,7 @@ ACOSolution runAntColony(
             antsCount,
             params.initialPheromone
     );
-    std::vector<std::vector<double>> pheromones = initializePheromones(
+    PheromoneMatrix pheromones = initializePheromones(
             instance,
             effectiveInitialPheromone
     );
