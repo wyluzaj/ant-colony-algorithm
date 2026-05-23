@@ -1,5 +1,7 @@
 #ifndef PEA4_TSP_INSTANCE_H
 #define PEA4_TSP_INSTANCE_H
+
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -19,14 +21,31 @@ struct TSPInstance {
     int dimension = 0;
 
     std::vector<City> cities;
-    std::vector<std::vector<int>> distanceMatrix;
+
+    // Flat distance matrix: distance(i, j) is stored at i * dimension + j.
+    // It is faster for ants than vector<vector<int>>, because data is continuous in memory.
+    std::vector<int> distanceMatrix;
+
     std::vector<std::vector<int>> sortedNeighbors;
     std::vector<std::vector<int>> sortedInNeighbors;
 
+    [[nodiscard]] std::size_t index(int row, int column) const {
+        return static_cast<std::size_t>(row) * static_cast<std::size_t>(dimension) +
+               static_cast<std::size_t>(column);
+    }
+
+    [[nodiscard]] int distance(int from, int to) const {
+        return distanceMatrix[index(from, to)];
+    }
+
+    int& distanceRef(int from, int to) {
+        return distanceMatrix[index(from, to)];
+    }
+
     [[nodiscard]] bool isValid() const {
         return dimension > 0 &&
-               static_cast<int>(distanceMatrix.size()) == dimension;
+               distanceMatrix.size() == static_cast<std::size_t>(dimension) * static_cast<std::size_t>(dimension);
     }
 };
 
-#endif //PEA4_TSP_INSTANCE_H
+#endif // PEA4_TSP_INSTANCE_H

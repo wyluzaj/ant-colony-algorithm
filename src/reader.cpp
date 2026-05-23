@@ -56,7 +56,7 @@ namespace {
         const int n = instance.dimension;
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
-                instance.distanceMatrix[i][j] = readWeight(file, "FULL_MATRIX");
+                instance.distanceRef(i, j) = readWeight(file, "FULL_MATRIX");
             }
         }
     }
@@ -66,8 +66,8 @@ namespace {
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j <= i; ++j) {
                 const int weight = readWeight(file, "LOWER_DIAG_ROW");
-                instance.distanceMatrix[i][j] = weight;
-                instance.distanceMatrix[j][i] = weight;
+                instance.distanceRef(i, j) = weight;
+                instance.distanceRef(j, i) = weight;
             }
         }
         instance.symmetric = true;
@@ -78,8 +78,8 @@ namespace {
         for (int i = 0; i < n; ++i) {
             for (int j = i; j < n; ++j) {
                 const int weight = readWeight(file, "UPPER_DIAG_ROW");
-                instance.distanceMatrix[i][j] = weight;
-                instance.distanceMatrix[j][i] = weight;
+                instance.distanceRef(i, j) = weight;
+                instance.distanceRef(j, i) = weight;
             }
         }
         instance.symmetric = true;
@@ -175,7 +175,7 @@ TSPInstance readTSPInstance(const std::string& filePath) {
     }
 
     if (inEdgeWeightSection) {
-        instance.distanceMatrix.assign(instance.dimension, std::vector<int>(instance.dimension, 0));
+        instance.distanceMatrix.assign(static_cast<size_t>(instance.dimension) * static_cast<size_t>(instance.dimension), 0);
 
         if (instance.edge_weight_format == "FULL_MATRIX") {
             readFullMatrix(file, instance);

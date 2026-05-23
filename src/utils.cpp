@@ -49,16 +49,16 @@ void buildDistanceMatrixFromCoordinates(TSPInstance& instance) {
         throw std::runtime_error("The number of cities does not match the DIMENSION.");
     }
 
-    instance.distanceMatrix.assign(n, std::vector<int>(n, 0));
+    instance.distanceMatrix.assign(static_cast<size_t>(n) * static_cast<size_t>(n), 0);
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             if (i == j) {
-                instance.distanceMatrix[i][j] = 0;
+                instance.distanceRef(i, j) = 0;
             } else if (instance.edge_weight_type == "GEO") {
-                instance.distanceMatrix[i][j] = calculateGeoDistance(instance.cities[i], instance.cities[j]);
+                instance.distanceRef(i, j) = calculateGeoDistance(instance.cities[i], instance.cities[j]);
             } else if (instance.edge_weight_type == "EUC_2D" || instance.edge_weight_type.empty()) {
-                instance.distanceMatrix[i][j] = calculateEuclideanDistance(instance.cities[i], instance.cities[j]);
+                instance.distanceRef(i, j) = calculateEuclideanDistance(instance.cities[i], instance.cities[j]);
             } else {
                 throw std::runtime_error("Unsupported EDGE_WEIGHT_TYPE for coordinates:" + instance.edge_weight_type);
             }
@@ -89,10 +89,10 @@ void buildSortedNeighbors(TSPInstance& instance) {
         }
 
         std::sort(instance.sortedNeighbors[i].begin(), instance.sortedNeighbors[i].end(),
-                  [&](int a, int b) { return instance.distanceMatrix[i][a] < instance.distanceMatrix[i][b]; });
+                  [&](int a, int b) { return instance.distance(i, a) < instance.distance(i, b); });
 
         std::sort(instance.sortedInNeighbors[i].begin(), instance.sortedInNeighbors[i].end(),
-                  [&](int a, int b) { return instance.distanceMatrix[a][i] < instance.distanceMatrix[b][i]; });
+                  [&](int a, int b) { return instance.distance(a, i) < instance.distance(b, i); });
     }
 }
 
@@ -111,7 +111,7 @@ int calculatePartialPathCost(const TSPInstance& instance, const std::vector<int>
         if (from < 0 || from >= instance.dimension || to < 0 || to >= instance.dimension) {
             throw std::runtime_error("The path contains an invalid city index.");
         }
-        totalCost += instance.distanceMatrix[from][to];
+        totalCost += instance.distance(from, to);
     }
     return totalCost;
 }
@@ -128,7 +128,7 @@ int calculatePathCost(const TSPInstance& instance, const std::vector<int>& path)
     }
 
     int totalCost = calculatePartialPathCost(instance, path);
-    totalCost += instance.distanceMatrix[path.back()][path.front()];
+    totalCost += instance.distance(path.back(), path.front());
     return totalCost;
 }
 
