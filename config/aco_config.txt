@@ -9,9 +9,11 @@ instancePath = data/eil51.tsp
 # Format in this file: instance_name : optimal_cost
 optimalPath = config/optimal.txt
 
-# Path to the backward-compatible CSV output file.
-# If the folder does not exist, writer.cpp creates it automatically.
-outputPath = results/aco_results.csv
+# Base directory for detailed, aggregate and history results.
+# Per-run results: results/wyniki/<instance>.csv
+# Aggregate results: results/aggregate/aco_aggregate.csv
+# History results: results/history/<instance>/<instance>_run<run>_...csv
+resultsDirectory = results
 
 # Number of ants.
 # ants = 0 means ants = number of cities.
@@ -25,12 +27,6 @@ runs = 10
 # seed = 0 means random seed at the beginning of every run.
 # seed = 12345 means run 1 uses 12345, run 2 uses 12346, etc.
 seed = 0
-
-# Base directory for detailed, aggregate and history results.
-# Per-run results: results/wyniki/<instance>.csv
-# Aggregate results: results/aggregate/aco_aggregate.csv
-# History results: results/history/<instance>/<instance>_run<run>_...csv
-resultsDirectory = results
 
 # Maximum running time in seconds.
 maxTimeSeconds = 10

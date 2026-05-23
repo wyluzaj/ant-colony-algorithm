@@ -3,21 +3,12 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <numeric>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
 namespace {
-    std::string pathToCompactString(const std::vector<int>& path) {
-        std::ostringstream oss;
-        for (size_t i = 0; i < path.size(); ++i) {
-            if (i > 0) {
-                oss << '-';
-            }
-            oss << path[i];
-        }
-        return oss.str();
-    }
+    constexpr char CSV_SEPARATOR = ',';
 
     void createParentDirectoryIfNeeded(const std::string& filePath) {
         const std::filesystem::path path(filePath);
@@ -33,14 +24,6 @@ namespace {
             return false;
         }
         return std::filesystem::file_size(filePath) > 0;
-    }
-
-    double mean(const std::vector<double>& values) {
-        if (values.empty()) {
-            return 0.0;
-        }
-        const double sum = std::accumulate(values.begin(), values.end(), 0.0);
-        return sum / static_cast<double>(values.size());
     }
 
     double median(std::vector<double> values) {
@@ -65,11 +48,83 @@ namespace {
         return *std::min_element(values.begin(), values.end());
     }
 
-    double maxValue(const std::vector<double>& values) {
-        if (values.empty()) {
-            return 0.0;
+    std::string safeToken(std::string value) {
+        for (char& c : value) {
+            if (c == '.' || c == ',' || c == ':' || c == ';' || c == '/' || c == '\\' || c == ' ') {
+                c = '_';
+            }
         }
-        return *std::max_element(values.begin(), values.end());
+        return value;
+    }
+
+    std::string doubleToken(double value) {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(3) << value;
+        return safeToken(oss.str());
+    }
+
+    std::string boolToken(bool value) {
+        return value ? "true" : "false";
+    }
+
+    std::string resultFileForInstance(const std::string& resultsDirectory, const std::string& instanceName) {
+        const std::filesystem::path path =
+                std::filesystem::path(resultsDirectory)
+                / "wyniki"
+                / (safeToken(instanceName) + ".csv");
+
+        return path.string();
+    }
+
+    std::string aggregateFilePath(const std::string& resultsDirectory) {
+        const std::filesystem::path path =
+                std::filesystem::path(resultsDirectory)
+                / "aggregate"
+                / "aco_aggregate.csv";
+
+        return path.string();
+    }
+
+    std::string historyFileForRun(const std::string& resultsDirectory, const AlgorithmResult& result) {
+        std::ostringstream fileName;
+
+        fileName << safeToken(result.instanceName)
+                 << "_run" << result.runNumber
+                 << "_seed" << result.seed
+                 << "_alpha" << doubleToken(result.alpha)
+                 << "_beta" << doubleToken(result.beta)
+                 << "_time" << doubleToken(result.maxTimeSeconds)
+                 << "_target" << boolToken(result.stopOnTargetError)
+                 << "_targetError" << doubleToken(result.targetError)
+                 << "_twoOpt" << boolToken(result.useTwoOpt)
+                 << "_mode" << safeToken(result.mode)
+                 << ".csv";
+
+        const std::filesystem::path path =
+                std::filesystem::path(resultsDirectory)
+                / "history"
+                / safeToken(result.instanceName)
+                / fileName.str();
+
+        return path.string();
+    }
+
+    void writeResultCsvHeaderIfNeeded(const std::string& filePath) {
+        createParentDirectoryIfNeeded(filePath);
+
+        if (fileExistsAndIsNotEmpty(filePath)) {
+            return;
+        }
+
+        std::ofstream file(filePath);
+        if (!file.is_open()) {
+            throw std::runtime_error("Unable to create output file: " + filePath);
+        }
+
+        file << "instance,algorithm,dimension,run_number,seed,best_cost,optimal_cost,relative_error_percent,"
+             << "time_ms,iterations,stop_reason,ants,runs,max_time_seconds,stop_on_target_error,target_error,"
+             << "alpha,beta,r,initial_pheromone,effective_initial_pheromone,"
+             << "deposit_amount,use_two_opt,mode\n";
     }
 
     void writeAggregateCsvHeaderIfNeeded(const std::string& filePath) {
@@ -84,36 +139,19 @@ namespace {
             throw std::runtime_error("Unable to create aggregate output file: " + filePath);
         }
 
-        file << "instance;algorithm;dimension;runs;ants;max_time_seconds;stop_on_target_error;target_error;"
-             << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;deposit_amount;"
-             << "use_two_opt;mode;optimal_cost;"
-             << "mean_cost;median_cost;best_cost;worst_cost;"
-             << "mean_time_ms;median_time_ms;best_time_ms;worst_time_ms;"
-             << "mean_relative_error_percent;median_relative_error_percent;best_relative_error_percent;worst_relative_error_percent;"
-             << "mean_iterations;median_iterations;best_iterations;worst_iterations;"
-             << "target_success_count;target_success_rate_percent\n";
+        file << "instance,algorithm,dimension,runs,ants,max_time_seconds,stop_on_target_error,target_error,"
+             << "alpha,beta,r,initial_pheromone,effective_initial_pheromone,deposit_amount,"
+             << "use_two_opt,mode,optimal_cost,"
+             << "median_time_ms,"
+             << "median_relative_error_percent,best_relative_error_percent,"
+             << "median_iterations,"
+             << "target_success_count\n";
     }
 }
 
-void writeResultCsvHeaderIfNeeded(const std::string& filePath) {
-    createParentDirectoryIfNeeded(filePath);
+void appendResultToCsv(const std::string& resultsDirectory, const AlgorithmResult& result) {
+    const std::string filePath = resultFileForInstance(resultsDirectory, result.instanceName);
 
-    if (fileExistsAndIsNotEmpty(filePath)) {
-        return;
-    }
-
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        throw std::runtime_error("Unable to create output file: " + filePath);
-    }
-
-    file << "instance;algorithm;dimension;run_number;seed;best_cost;optimal_cost;relative_error_percent;"
-         << "time_ms;iterations;stop_reason;ants;runs;max_time_seconds;stop_on_target_error;target_error;"
-         << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;"
-         << "deposit_amount;use_two_opt;mode;path\n";
-}
-
-void appendResultToCsv(const std::string& filePath, const AlgorithmResult& result) {
     createParentDirectoryIfNeeded(filePath);
     writeResultCsvHeaderIfNeeded(filePath);
 
@@ -122,37 +160,38 @@ void appendResultToCsv(const std::string& filePath, const AlgorithmResult& resul
         throw std::runtime_error("Unable to create output file: " + filePath);
     }
 
-    file << result.instanceName << ';'
-         << result.algorithmName << ';'
-         << result.dimension << ';'
-         << result.runNumber << ';'
-         << result.seed << ';'
-         << result.bestCost << ';'
-         << result.optimalCost << ';'
-         << result.relativeError << ';'
-         << result.timeMs << ';'
-         << result.iterations << ';'
-         << result.stopReason << ';'
-         << result.ants << ';'
-         << result.runs << ';'
-         << result.maxTimeSeconds << ';'
-         << result.stopOnTargetError << ';'
-         << result.targetError << ';'
-         << result.alpha << ';'
-         << result.beta << ';'
-         << result.r << ';'
-         << result.initialPheromone << ';'
-         << result.effectiveInitialPheromone << ';'
-         << result.depositAmount << ';'
-         << result.useTwoOpt << ';'
-         << result.mode << ';'
-         << pathToCompactString(result.bestPath) << '\n';
+    file << result.instanceName << CSV_SEPARATOR
+         << result.algorithmName << CSV_SEPARATOR
+         << result.dimension << CSV_SEPARATOR
+         << result.runNumber << CSV_SEPARATOR
+         << result.seed << CSV_SEPARATOR
+         << result.bestCost << CSV_SEPARATOR
+         << result.optimalCost << CSV_SEPARATOR
+         << result.relativeError << CSV_SEPARATOR
+         << result.timeMs << CSV_SEPARATOR
+         << result.iterations << CSV_SEPARATOR
+         << result.stopReason << CSV_SEPARATOR
+         << result.ants << CSV_SEPARATOR
+         << result.runs << CSV_SEPARATOR
+         << result.maxTimeSeconds << CSV_SEPARATOR
+         << result.stopOnTargetError << CSV_SEPARATOR
+         << result.targetError << CSV_SEPARATOR
+         << result.alpha << CSV_SEPARATOR
+         << result.beta << CSV_SEPARATOR
+         << result.r << CSV_SEPARATOR
+         << result.initialPheromone << CSV_SEPARATOR
+         << result.effectiveInitialPheromone << CSV_SEPARATOR
+         << result.depositAmount << CSV_SEPARATOR
+         << result.useTwoOpt << CSV_SEPARATOR
+         << result.mode << '\n';
 }
 
-void appendAggregateToCsv(const std::string& filePath, const std::vector<AlgorithmResult>& results) {
+void appendAggregateToCsv(const std::string& resultsDirectory, const std::vector<AlgorithmResult>& results) {
     if (results.empty()) {
         return;
     }
+
+    const std::string filePath = aggregateFilePath(resultsDirectory);
 
     createParentDirectoryIfNeeded(filePath);
     writeAggregateCsvHeaderIfNeeded(filePath);
@@ -162,19 +201,16 @@ void appendAggregateToCsv(const std::string& filePath, const std::vector<Algorit
         throw std::runtime_error("Unable to create aggregate output file: " + filePath);
     }
 
-    std::vector<double> costs;
     std::vector<double> times;
     std::vector<double> errors;
     std::vector<double> iterations;
 
-    costs.reserve(results.size());
     times.reserve(results.size());
     errors.reserve(results.size());
     iterations.reserve(results.size());
 
     int targetSuccessCount = 0;
     for (const AlgorithmResult& result : results) {
-        costs.push_back(static_cast<double>(result.bestCost));
         times.push_back(result.timeMs);
         errors.push_back(result.relativeError);
         iterations.push_back(static_cast<double>(result.iterations));
@@ -185,46 +221,40 @@ void appendAggregateToCsv(const std::string& filePath, const std::vector<Algorit
     }
 
     const AlgorithmResult& first = results.front();
-    const double targetSuccessRate = 100.0 * static_cast<double>(targetSuccessCount) / static_cast<double>(results.size());
+    const double targetSuccessRate =
+            100.0 * static_cast<double>(targetSuccessCount) / static_cast<double>(results.size());
 
-    file << first.instanceName << ';'
-         << first.algorithmName << ';'
-         << first.dimension << ';'
-         << results.size() << ';'
-         << first.ants << ';'
-         << first.maxTimeSeconds << ';'
-         << first.stopOnTargetError << ';'
-         << first.targetError << ';'
-         << first.alpha << ';'
-         << first.beta << ';'
-         << first.r << ';'
-         << first.initialPheromone << ';'
-         << first.effectiveInitialPheromone << ';'
-         << first.depositAmount << ';'
-         << first.useTwoOpt << ';'
-         << first.mode << ';'
-         << first.optimalCost << ';'
-         << mean(costs) << ';'
-         << median(costs) << ';'
-         << minValue(costs) << ';'
-         << maxValue(costs) << ';'
-         << mean(times) << ';'
-         << median(times) << ';'
-         << minValue(times) << ';'
-         << maxValue(times) << ';'
-         << mean(errors) << ';'
-         << median(errors) << ';'
-         << minValue(errors) << ';'
-         << maxValue(errors) << ';'
-         << mean(iterations) << ';'
-         << median(iterations) << ';'
-         << minValue(iterations) << ';'
-         << maxValue(iterations) << ';'
-         << targetSuccessCount << ';'
-         << targetSuccessRate << '\n';
+    file << first.instanceName << CSV_SEPARATOR
+         << first.algorithmName << CSV_SEPARATOR
+         << first.dimension << CSV_SEPARATOR
+         << results.size() << CSV_SEPARATOR
+         << first.ants << CSV_SEPARATOR
+         << first.maxTimeSeconds << CSV_SEPARATOR
+         << first.stopOnTargetError << CSV_SEPARATOR
+         << first.targetError << CSV_SEPARATOR
+         << first.alpha << CSV_SEPARATOR
+         << first.beta << CSV_SEPARATOR
+         << first.r << CSV_SEPARATOR
+         << first.initialPheromone << CSV_SEPARATOR
+         << first.effectiveInitialPheromone << CSV_SEPARATOR
+         << first.depositAmount << CSV_SEPARATOR
+         << first.useTwoOpt << CSV_SEPARATOR
+         << first.mode << CSV_SEPARATOR
+         << first.optimalCost << CSV_SEPARATOR
+         << median(times) << CSV_SEPARATOR
+         << median(errors) << CSV_SEPARATOR
+         << minValue(errors) << CSV_SEPARATOR
+         << median(iterations) << CSV_SEPARATOR
+         << targetSuccessCount <<'\n';
 }
 
-void writeHistoryToCsv(const std::string& filePath, const std::vector<ACOHistoryEntry>& history) {
+std::string writeHistoryToCsv(
+        const std::string& resultsDirectory,
+        const AlgorithmResult& result,
+        const std::vector<ACOHistoryEntry>& history
+) {
+    const std::string filePath = historyFileForRun(resultsDirectory, result);
+
     createParentDirectoryIfNeeded(filePath);
 
     std::ofstream file(filePath);
@@ -232,12 +262,14 @@ void writeHistoryToCsv(const std::string& filePath, const std::vector<ACOHistory
         throw std::runtime_error("Unable to create history output file: " + filePath);
     }
 
-    file << "iteration;time_ms;best_cost;relative_error_percent\n";
+    file << "iteration,time_ms,best_cost,relative_error_percent\n";
 
     for (const ACOHistoryEntry& entry : history) {
-        file << entry.iteration << ';'
-             << entry.timeMs << ';'
-             << entry.bestCost << ';'
+        file << entry.iteration << CSV_SEPARATOR
+             << entry.timeMs << CSV_SEPARATOR
+             << entry.bestCost << CSV_SEPARATOR
              << entry.relativeError << '\n';
     }
+
+    return filePath;
 }
