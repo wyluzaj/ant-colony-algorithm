@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 
 namespace {
@@ -159,9 +160,45 @@ AppConfig readConfig(const std::string& filePath) {
     if (config.aco.r < 0.0 || config.aco.r > 1.0) {
         throw std::runtime_error("r must be in range [0, 1].");
     }
+    if (config.aco.initialPheromone < 0.0) {
+        throw std::runtime_error("initialPheromone must be >= 0. Use initialPheromone = 0 for automatic value.");
+    }
+    if (config.aco.depositAmount <= 0.0) {
+        throw std::runtime_error("depositAmount must be > 0.");
+    }
+    if (config.aco.targetError < 0.0) {
+        throw std::runtime_error("targetError must be >= 0.");
+    }
 
     validatePheromoneSettings(config.aco.mode);
     return config;
+}
+
+void validateConfigAfterInstanceLoad(const AppConfig& config, const TSPInstance& instance) {
+    if (!instance.isValid()) {
+        throw std::runtime_error("Loaded TSP instance is invalid or has incomplete distance matrix.");
+    }
+
+    const int antsCount = config.aco.ants <= 0 ? instance.dimension : config.aco.ants;
+    if (antsCount <= 0) {
+        throw std::runtime_error("Effective ants count must be > 0.");
+    }
+
+    const double n = static_cast<double>(instance.dimension);
+    const double bytesPerSquareMatrix = n * n * static_cast<double>(sizeof(int));
+    const double pheromoneBytes = n * n * static_cast<double>(sizeof(float));
+
+    // Approximation for the biggest structures kept during a run:
+    // distanceMatrix, sortedNeighbors, sortedInNeighbors and pheromone matrix.
+    const double estimatedBytes = (3.0 * bytesPerSquareMatrix) + pheromoneBytes;
+    constexpr double warningLimitBytes = 512.0 * 1024.0 * 1024.0;
+
+    if (estimatedBytes >= warningLimitBytes) {
+        std::cerr << "Warning: estimated memory for core ACO matrices is about "
+                  << static_cast<long long>(estimatedBytes / (1024.0 * 1024.0))
+                  << " MB for instance dimension " << instance.dimension
+                  << ". Very large instances may require reducing memory usage or using a machine with more RAM.\n";
+    }
 }
 
 std::unordered_map<std::string, int> readOptimalValues(const std::string& filePath) {
