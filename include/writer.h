@@ -24,12 +24,14 @@ struct AlgorithmResult {
     double maxTimeSeconds = 0.0;
     bool stopOnTargetError = false;
     double targetError = 0.0;
+
     double alpha = 0.0;
     double beta = 0.0;
     double r = 0.0;
     double configuredInitialPheromone = 0.0;
     double effectiveInitialPheromone = 0.0;
     double depositAmount = 0.0;
+
     std::string depositTiming;
     std::string mode;
 

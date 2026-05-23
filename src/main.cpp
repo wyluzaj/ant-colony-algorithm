@@ -61,7 +61,9 @@ int main(int argc, char** argv) {
         std::cout << "Optimal cost: " << optimalCost << "\n";
         std::cout << "Ants: " << antsCount << "\n";
         std::cout << "Runs: " << config.aco.runs << "\n";
-        std::cout << "Seed: " << (config.aco.seed == 0 ? std::string("random for each run") : std::to_string(config.aco.seed)) << "\n";
+        std::cout << "Seed: "
+                  << (config.aco.seed == 0 ? std::string("random for each run") : std::to_string(config.aco.seed))
+                  << "\n";
         std::cout << "Mode: " << pheromoneUpdateModeToString(config.aco.mode) << "\n";
         std::cout << "Deposit timing: " << pheromoneDepositTimingToString(config.aco.depositTiming) << "\n";
 
@@ -84,33 +86,38 @@ int main(int argc, char** argv) {
             std::cout << "Stop reason: " << solution.stopReason << "\n";
             std::cout << "Path: " << pathToString(solution.path, instance) << "\n";
 
-            AlgorithmResult result{
-                    instance.name,
-                    "ACO",
-                    instance.dimension,
-                    runNumber,
-                    runSeed,
-                    solution.cost,
-                    optimalCost,
-                    solution.relativeError,
-                    solution.timeMs,
-                    solution.iterations,
-                    solution.stopReason,
-                    antsCount,
-                    config.aco.runs,
-                    config.aco.maxTimeSeconds,
-                    config.aco.stopOnTargetError,
-                    config.aco.targetError,
-                    config.aco.alpha,
-                    config.aco.beta,
-                    config.aco.r,
-                    config.aco.initialPheromone,
-                    solution.effectiveInitialPheromone,
-                    config.aco.depositAmount,
-                    pheromoneDepositTimingToString(config.aco.depositTiming),
-                    pheromoneUpdateModeToString(config.aco.mode),
-                    solution.path
-            };
+            AlgorithmResult result;
+            result.instanceName = instance.name;
+            result.algorithmName = "ACO";
+            result.dimension = instance.dimension;
+
+            result.runNumber = runNumber;
+            result.seed = runSeed;
+
+            result.bestCost = solution.cost;
+            result.optimalCost = optimalCost;
+            result.relativeError = solution.relativeError;
+            result.timeMs = solution.timeMs;
+            result.iterations = solution.iterations;
+            result.stopReason = solution.stopReason;
+
+            result.ants = antsCount;
+            result.runs = config.aco.runs;
+            result.maxTimeSeconds = config.aco.maxTimeSeconds;
+            result.stopOnTargetError = config.aco.stopOnTargetError;
+            result.targetError = config.aco.targetError;
+
+            result.alpha = config.aco.alpha;
+            result.beta = config.aco.beta;
+            result.r = config.aco.r;
+            result.configuredInitialPheromone = config.aco.initialPheromone;
+            result.effectiveInitialPheromone = solution.effectiveInitialPheromone;
+            result.depositAmount = config.aco.depositAmount;
+
+            result.depositTiming = pheromoneDepositTimingToString(config.aco.depositTiming);
+            result.mode = pheromoneUpdateModeToString(config.aco.mode);
+
+            result.bestPath = solution.path;
 
             appendResultToCsv(instanceResultPath, result);
             appendResultToCsv(config.outputPath, result);
