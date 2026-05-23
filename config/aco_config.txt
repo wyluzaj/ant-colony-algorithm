@@ -1,0 +1,62 @@
+# Configuration file for PEA4 Ant Colony Optimization.
+# Format: key = value
+# Lines starting with # are comments.
+
+# Path to the TSP instance file.
+instancePath = data/eil51.tsp
+
+# Path to the file with optimal or best-known values.
+# Format in this file: instance_name : optimal_cost
+optimalPath = config/optimal.txt
+
+# Path to the CSV output file.
+# If the folder does not exist, writer.cpp creates it automatically.
+outputPath = results/aco_results.csv
+
+# Number of ants.
+# ants = 0 means ants = number of cities.
+ants = 0
+
+# Maximum running time in seconds.
+maxTimeSeconds = 10
+
+# If true, the algorithm stops when relative error <= targetError.
+# Requires that optimalPath contains the value for the selected instance.
+stopOnTargetError = true
+
+# Target relative error in percent.
+# Example: targetError = 20 means 20%.
+targetError = 20
+
+# Importance of pheromone.
+alpha = 1.0
+
+# Importance of heuristic information, usually from 2 to 5.
+beta = 2.0
+
+# Evaporation rate.
+# r = 0 means no evaporation, r = 1 means full evaporation.
+r = 0.5
+
+# Initial pheromone value on every edge.
+# initialPheromone = 0 means automatic value: ants / Cnn,
+# where Cnn is the best nearest-neighbour tour cost.
+initialPheromone = 0
+
+# Pheromone deposit coefficient Q.
+# DAS: delta = Q
+# QAS: delta = Q / distance(i, j)
+# CAS: delta = Q / tourCost
+# This is not the initial pheromone value.
+depositAmount = 1.0
+
+# Moment of pheromone deposit:
+# AfterMove - deposit immediately after traversing an edge; valid for DAS and QAS.
+# AfterTour - deposit after a complete tour; valid for DAS, QAS and CAS.
+depositTiming = AfterTour
+
+# Pheromone update mode:
+# DAS - density ant system, constant pheromone amount Q.
+# QAS - quantity ant system, Q divided by edge length.
+# CAS - cycle ant system, Q divided by complete tour length.
+mode = CAS

@@ -1,0 +1,16 @@
+#format name : cost of optimal tour
+ulysses16 : 6859
+ulysses22 : 7013
+fri26 : 937
+eil51 : 426
+pr76 : 108159
+bier127 : 118282
+si175 : 21407
+kroB200 : 29437
+xqg237 : 1019
+pbm436 : 1443
+xql662 : 2513
+lim963 : 2789
+dka1376 : 4666
+djc1785 : 6115
+rbw2481 : 2481
