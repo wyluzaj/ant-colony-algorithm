@@ -9,7 +9,7 @@ instancePath = data/eil51.tsp
 # Format in this file: instance_name : optimal_cost
 optimalPath = config/optimal.txt
 
-# Path to the CSV output file.
+# Path to the backward-compatible CSV output file.
 # If the folder does not exist, writer.cpp creates it automatically.
 outputPath = results/aco_results.csv
 
@@ -26,9 +26,10 @@ runs = 10
 # seed = 12345 means run 1 uses 12345, run 2 uses 12346, etc.
 seed = 0
 
-# Base directory for detailed and aggregate results.
+# Base directory for detailed, aggregate and history results.
 # Per-run results: results/wyniki/<instance>.csv
 # Aggregate results: results/aggregate/aco_aggregate.csv
+# History results: results/history/<instance>/<instance>_run<run>_...csv
 resultsDirectory = results
 
 # Maximum running time in seconds.
@@ -63,19 +64,15 @@ initialPheromone = 0
 useTwoOpt = false
 
 # Pheromone deposit coefficient Q.
-# DAS: delta = Q
-# QAS: delta = Q / distance(i, j)
-# CAS: delta = Q / tourCost
+# DAS: delta = Q, deposited after each move.
+# QAS: delta = Q / distance(i, j), deposited after each move.
+# CAS: delta = Q / tourCost, deposited after a complete tour.
 # This is not the initial pheromone value.
 depositAmount = 1.0
 
-# Moment of pheromone deposit:
-# AfterMove - deposit immediately after traversing an edge; valid for DAS and QAS.
-# AfterTour - deposit after a complete tour; valid for DAS, QAS and CAS.
-depositTiming = AfterTour
-
-# Pheromone update mode:
-# DAS - density ant system, constant pheromone amount Q.
-# QAS - quantity ant system, Q divided by edge length.
-# CAS - cycle ant system, Q divided by complete tour length.
+# Pheromone update mode.
+# Deposit timing is fixed by mode and is not configured separately:
+# DAS - density ant system, constant pheromone amount Q, deposited after each move.
+# QAS - quantity ant system, Q divided by edge length, deposited after each move.
+# CAS - cycle ant system, Q divided by complete tour length, deposited after a complete tour.
 mode = CAS

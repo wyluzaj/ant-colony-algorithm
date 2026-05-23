@@ -86,7 +86,7 @@ namespace {
 
         file << "instance;algorithm;dimension;runs;ants;max_time_seconds;stop_on_target_error;target_error;"
              << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;deposit_amount;"
-             << "use_two_opt;deposit_timing;mode;optimal_cost;"
+             << "use_two_opt;mode;optimal_cost;"
              << "mean_cost;median_cost;best_cost;worst_cost;"
              << "mean_time_ms;median_time_ms;best_time_ms;worst_time_ms;"
              << "mean_relative_error_percent;median_relative_error_percent;best_relative_error_percent;worst_relative_error_percent;"
@@ -110,7 +110,7 @@ void writeResultCsvHeaderIfNeeded(const std::string& filePath) {
     file << "instance;algorithm;dimension;run_number;seed;best_cost;optimal_cost;relative_error_percent;"
          << "time_ms;iterations;stop_reason;ants;runs;max_time_seconds;stop_on_target_error;target_error;"
          << "alpha;beta;r;initial_pheromone;effective_initial_pheromone;"
-         << "deposit_amount;deposit_timing;mode;path\n";
+         << "deposit_amount;use_two_opt;mode;path\n";
 }
 
 void appendResultToCsv(const std::string& filePath, const AlgorithmResult& result) {
@@ -144,7 +144,7 @@ void appendResultToCsv(const std::string& filePath, const AlgorithmResult& resul
          << result.initialPheromone << ';'
          << result.effectiveInitialPheromone << ';'
          << result.depositAmount << ';'
-         << result.depositTiming << ';'
+         << result.useTwoOpt << ';'
          << result.mode << ';'
          << pathToCompactString(result.bestPath) << '\n';
 }
@@ -201,7 +201,7 @@ void appendAggregateToCsv(const std::string& filePath, const std::vector<Algorit
          << first.initialPheromone << ';'
          << first.effectiveInitialPheromone << ';'
          << first.depositAmount << ';'
-         << first.depositTiming << ';'
+         << first.useTwoOpt << ';'
          << first.mode << ';'
          << first.optimalCost << ';'
          << mean(costs) << ';'

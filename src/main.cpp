@@ -116,7 +116,6 @@ int main(int argc, char** argv) {
                   << (config.aco.seed == 0 ? std::string("random for each run") : std::to_string(config.aco.seed))
                   << "\n";
         std::cout << "Mode: " << pheromoneUpdateModeToString(config.aco.mode) << "\n";
-        std::cout << "Deposit timing: " << pheromoneDepositTimingToString(config.aco.depositTiming) << "\n";
         std::cout << "2-opt local search: " << (config.aco.useTwoOpt ? "enabled" : "disabled") << "\n";
 
         std::vector<AlgorithmResult> runResults;
@@ -177,7 +176,6 @@ int main(int argc, char** argv) {
             result.depositAmount = config.aco.depositAmount;
             result.useTwoOpt = config.aco.useTwoOpt;
 
-            result.depositTiming = pheromoneDepositTimingToString(config.aco.depositTiming);
             result.mode = pheromoneUpdateModeToString(config.aco.mode);
 
             result.bestPath = solution.path;

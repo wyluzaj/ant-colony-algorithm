@@ -137,6 +137,7 @@ namespace {
 
 
     bool isSymmetricDistanceMatrix(const TSPInstance& instance);
+    bool depositsAfterEachMove(PheromoneUpdateMode mode);
     void applyTwoOptIfEnabled(const TSPInstance& instance, AntTour& tour, bool useTwoOpt, bool symmetricMatrix);
 
     AntTour buildAntTour(
@@ -167,7 +168,7 @@ namespace {
                     rng
             );
 
-            if (params.depositTiming == PheromoneDepositTiming::AfterMove) {
+            if (depositsAfterEachMove(params.mode)) {
                 depositPheromoneOnEdge(
                         instance,
                         pheromones,
@@ -184,7 +185,7 @@ namespace {
             tour.path.push_back(currentCity);
         }
 
-        if (params.depositTiming == PheromoneDepositTiming::AfterMove) {
+        if (depositsAfterEachMove(params.mode)) {
             const int from = currentCity;
             const int to = tour.path.front();
 
@@ -203,6 +204,10 @@ namespace {
         return tour;
     }
 
+
+    bool depositsAfterEachMove(PheromoneUpdateMode mode) {
+        return mode == PheromoneUpdateMode::DAS || mode == PheromoneUpdateMode::QAS;
+    }
 
     bool isSymmetricDistanceMatrix(const TSPInstance& instance) {
         for (int i = 0; i < instance.dimension; ++i) {
@@ -313,7 +318,7 @@ ACOSolution runAntColony(
     if (!instance.isValid()) {
         throw std::runtime_error("Incorrect TSP instance.");
     }
-    validatePheromoneSettings(params.mode, params.depositTiming);
+    validatePheromoneSettings(params.mode);
 
     const int antsCount = params.ants <= 0 ? instance.dimension : params.ants;
     const double effectiveInitialPheromone = calculateEffectiveInitialPheromone(
@@ -351,7 +356,7 @@ ACOSolution runAntColony(
         std::vector<AntTour> tours;
         tours.reserve(antsCount);
 
-        if (params.depositTiming == PheromoneDepositTiming::AfterMove) {
+        if (depositsAfterEachMove(params.mode)) {
             evaporatePheromones(pheromones, params.r);
         }
 
@@ -369,7 +374,7 @@ ACOSolution runAntColony(
             tours.push_back(std::move(tour));
         }
 
-        if (params.depositTiming == PheromoneDepositTiming::AfterTour) {
+        if (params.mode == PheromoneUpdateMode::CAS) {
             evaporatePheromones(pheromones, params.r);
             for (const AntTour& tour : tours) {
                 depositPheromoneOnTour(instance, pheromones, tour, params.depositAmount, params.mode);
