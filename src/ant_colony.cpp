@@ -138,12 +138,17 @@ namespace {
         return candidates.back();
     }
 
+
+    bool isSymmetricDistanceMatrix(const TSPInstance& instance);
+    void applyTwoOptIfEnabled(const TSPInstance& instance, AntTour& tour, bool useTwoOpt, bool symmetricMatrix);
+
     AntTour buildAntTour(
             const TSPInstance& instance,
             std::vector<std::vector<double>>& pheromones,
             const ACOParameters& params,
             std::mt19937& rng,
-            int startCity
+            int startCity,
+            bool symmetricMatrix
     ) {
         const int n = instance.dimension;
         AntTour tour;
@@ -197,8 +202,93 @@ namespace {
             );
         }
 
-        tour.cost = calculatePathCost(instance, tour.path);
+        applyTwoOptIfEnabled(instance, tour, params.useTwoOpt, symmetricMatrix);
         return tour;
+    }
+
+
+    bool isSymmetricDistanceMatrix(const TSPInstance& instance) {
+        for (int i = 0; i < instance.dimension; ++i) {
+            for (int j = i + 1; j < instance.dimension; ++j) {
+                if (instance.distanceMatrix[i][j] != instance.distanceMatrix[j][i]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void twoOptImproveSymmetric(const TSPInstance& instance, AntTour& tour) {
+        const int n = static_cast<int>(tour.path.size());
+        if (n < 4) {
+            tour.cost = calculatePathCost(instance, tour.path);
+            return;
+        }
+
+        bool improved = true;
+        while (improved) {
+            improved = false;
+
+            for (int i = 1; i < n - 1 && !improved; ++i) {
+                for (int k = i + 1; k < n && !improved; ++k) {
+                    const int a = tour.path[i - 1];
+                    const int b = tour.path[i];
+                    const int c = tour.path[k];
+                    const int d = tour.path[(k + 1) % n];
+
+                    const int removed = instance.distanceMatrix[a][b] + instance.distanceMatrix[c][d];
+                    const int added = instance.distanceMatrix[a][c] + instance.distanceMatrix[b][d];
+
+                    if (added < removed) {
+                        std::reverse(tour.path.begin() + i, tour.path.begin() + k + 1);
+                        tour.cost += added - removed;
+                        improved = true;
+                    }
+                }
+            }
+        }
+    }
+
+    void twoOptImproveAsymmetricSafe(const TSPInstance& instance, AntTour& tour) {
+        const int n = static_cast<int>(tour.path.size());
+        if (n < 4) {
+            tour.cost = calculatePathCost(instance, tour.path);
+            return;
+        }
+
+        tour.cost = calculatePathCost(instance, tour.path);
+        bool improved = true;
+        while (improved) {
+            improved = false;
+
+            for (int i = 1; i < n - 1 && !improved; ++i) {
+                for (int k = i + 1; k < n && !improved; ++k) {
+                    std::reverse(tour.path.begin() + i, tour.path.begin() + k + 1);
+                    const int candidateCost = calculatePathCost(instance, tour.path);
+
+                    if (candidateCost < tour.cost) {
+                        tour.cost = candidateCost;
+                        improved = true;
+                    } else {
+                        std::reverse(tour.path.begin() + i, tour.path.begin() + k + 1);
+                    }
+                }
+            }
+        }
+    }
+
+    void applyTwoOptIfEnabled(const TSPInstance& instance, AntTour& tour, bool useTwoOpt, bool symmetricMatrix) {
+        if (!useTwoOpt) {
+            tour.cost = calculatePathCost(instance, tour.path);
+            return;
+        }
+
+        if (symmetricMatrix) {
+            tour.cost = calculatePathCost(instance, tour.path);
+            twoOptImproveSymmetric(instance, tour);
+        } else {
+            twoOptImproveAsymmetricSafe(instance, tour);
+        }
     }
 
     bool isTimeLimitReached(
@@ -250,6 +340,7 @@ ACOSolution runAntColony(
 
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> startCityDistribution(0, instance.dimension - 1);
+    const bool symmetricMatrix = isSymmetricDistanceMatrix(instance);
 
     const auto start = std::chrono::high_resolution_clock::now();
 
@@ -269,7 +360,7 @@ ACOSolution runAntColony(
 
         for (int ant = 0; ant < antsCount; ++ant) {
             const int startCity = startCityDistribution(rng);
-            AntTour tour = buildAntTour(instance, pheromones, params, rng, startCity);
+            AntTour tour = buildAntTour(instance, pheromones, params, rng, startCity, symmetricMatrix);
 
             if (tour.cost < bestSolution.cost) {
                 bestSolution.cost = tour.cost;

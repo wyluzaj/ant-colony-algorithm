@@ -33,6 +33,7 @@ struct AlgorithmResult {
     double initialPheromone = 0.0;
     double effectiveInitialPheromone = 0.0;
     double depositAmount = 0.0;
+    bool useTwoOpt = false;
 
     std::string depositTiming;
     std::string mode;
