@@ -9,6 +9,8 @@
 
 struct ACOParameters {
     int ants = 0;                  // 0 = ants = number of cities
+    int runs = 1;                  // number of independent runs for one config
+    unsigned int seed = 0;         // 0 = random seed for each run, otherwise seed + runIndex
     double maxTimeSeconds = 60.0;
 
     bool stopOnTargetError = true;
@@ -33,9 +35,16 @@ struct ACOSolution {
     int optimalCost = 0;
     double relativeError = -1.0;
     std::string stopReason;
+    unsigned int seed = 0;
+    double effectiveInitialPheromone = 0.0;
 };
 
-ACOSolution runAntColony(const TSPInstance& instance, const ACOParameters& params, int optimalCost);
+ACOSolution runAntColony(
+        const TSPInstance& instance,
+        const ACOParameters& params,
+        int optimalCost,
+        unsigned int seed
+);
 
 double calculateRelativeError(int bestCost, int optimalCost);
 

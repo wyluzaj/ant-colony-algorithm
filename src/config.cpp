@@ -65,8 +65,14 @@ namespace {
             config.outputPath = normalizePath(value);
         } else if (key == "optimalpath") {
             config.optimalPath = normalizePath(value);
+        } else if (key == "resultsdirectory" || key == "resultsdir") {
+            config.resultsDirectory = normalizePath(value);
         } else if (key == "ants") {
             config.aco.ants = std::stoi(value);
+        } else if (key == "runs") {
+            config.aco.runs = std::stoi(value);
+        } else if (key == "seed") {
+            config.aco.seed = static_cast<unsigned int>(std::stoul(value));
         } else if (key == "maxtimeseconds") {
             config.aco.maxTimeSeconds = std::stod(value);
         } else if (key == "stopontargeterror") {
@@ -131,6 +137,9 @@ AppConfig readConfig(const std::string& filePath) {
     }
     if (config.aco.ants < 0) {
         throw std::runtime_error("ants must be >= 0. Use ants = 0 to set ants = number of cities.");
+    }
+    if (config.aco.runs <= 0) {
+        throw std::runtime_error("runs must be > 0.");
     }
     if (config.aco.maxTimeSeconds <= 0.0) {
         throw std::runtime_error("maxTimeSeconds must be > 0.");

@@ -8,8 +8,9 @@
 
 struct AppConfig {
     std::string instancePath;
-    std::string outputPath = "results/results.csv";
+    std::string outputPath = "results/aco_results.csv"; // kept for backward-compatible single CSV output
     std::string optimalPath = "config/optimal.txt";
+    std::string resultsDirectory = "results";
     ACOParameters aco;
 };
 

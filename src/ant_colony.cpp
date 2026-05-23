@@ -53,19 +53,26 @@ namespace {
         return bestCost;
     }
 
-    std::vector<std::vector<double>> initializePheromones(
+    double calculateEffectiveInitialPheromone(
             const TSPInstance& instance,
             int antsCount,
-            double initialPheromone
+            double configuredInitialPheromone
     ) {
-        if (initialPheromone <= 0.0) {
-            const int cnn = calculateBestNearestNeighborCost(instance);
-            initialPheromone = static_cast<double>(antsCount) / static_cast<double>(cnn);
+        if (configuredInitialPheromone > 0.0) {
+            return configuredInitialPheromone;
         }
 
+        const int cnn = calculateBestNearestNeighborCost(instance);
+        return static_cast<double>(antsCount) / static_cast<double>(cnn);
+    }
+
+    std::vector<std::vector<double>> initializePheromones(
+            const TSPInstance& instance,
+            double effectiveInitialPheromone
+    ) {
         std::vector<std::vector<double>> pheromones(
                 instance.dimension,
-                std::vector<double>(instance.dimension, initialPheromone)
+                std::vector<double>(instance.dimension, effectiveInitialPheromone)
         );
 
         for (int i = 0; i < instance.dimension; ++i) {
@@ -210,17 +217,26 @@ double calculateRelativeError(int bestCost, int optimalCost) {
     return (static_cast<double>(bestCost - optimalCost) / static_cast<double>(optimalCost)) * 100.0;
 }
 
-ACOSolution runAntColony(const TSPInstance& instance, const ACOParameters& params, int optimalCost) {
+ACOSolution runAntColony(
+        const TSPInstance& instance,
+        const ACOParameters& params,
+        int optimalCost,
+        unsigned int seed
+) {
     if (!instance.isValid()) {
         throw std::runtime_error("Incorrect TSP instance.");
     }
     validatePheromoneSettings(params.mode, params.depositTiming);
 
     const int antsCount = params.ants <= 0 ? instance.dimension : params.ants;
-    std::vector<std::vector<double>> pheromones = initializePheromones(
+    const double effectiveInitialPheromone = calculateEffectiveInitialPheromone(
             instance,
             antsCount,
             params.initialPheromone
+    );
+    std::vector<std::vector<double>> pheromones = initializePheromones(
+            instance,
+            effectiveInitialPheromone
     );
 
     ACOSolution bestSolution;
@@ -229,9 +245,10 @@ ACOSolution runAntColony(const TSPInstance& instance, const ACOParameters& param
     bestSolution.optimalCost = optimalCost;
     bestSolution.relativeError = calculateRelativeError(bestSolution.cost, optimalCost);
     bestSolution.stopReason = "TimeLimit";
+    bestSolution.seed = seed;
+    bestSolution.effectiveInitialPheromone = effectiveInitialPheromone;
 
-    std::random_device randomDevice;
-    std::mt19937 rng(randomDevice());
+    std::mt19937 rng(seed);
     std::uniform_int_distribution<int> startCityDistribution(0, instance.dimension - 1);
 
     const auto start = std::chrono::high_resolution_clock::now();
