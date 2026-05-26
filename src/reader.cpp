@@ -85,13 +85,26 @@ namespace {
         instance.symmetric = true;
     }
 
+    void readUpperRow(std::istream& file, TSPInstance& instance) {
+        const int n = instance.dimension;
+        for (int i = 0; i < n - 1; ++i) {
+            for (int j = i + 1; j < n; ++j) {
+                const int weight = readWeight(file, "UPPER_ROW");
+                instance.distanceRef(i, j) = weight;
+                instance.distanceRef(j, i) = weight;
+            }
+        }
+        instance.symmetric = true;
+    }
+
     void validateExplicitFormat(const TSPInstance& instance, const std::string& filePath) {
         if (instance.edge_weight_type != "EXPLICIT") {
             throw std::runtime_error("EDGE_WEIGHT_SECTION needed EDGE_WEIGHT_TYPE = EXPLICIT. File: " + filePath);
         }
         if (instance.edge_weight_format != "FULL_MATRIX" &&
             instance.edge_weight_format != "LOWER_DIAG_ROW" &&
-            instance.edge_weight_format != "UPPER_DIAG_ROW") {
+            instance.edge_weight_format != "UPPER_DIAG_ROW" &&
+            instance.edge_weight_format != "UPPER_ROW") {
             throw std::runtime_error(
                     "Unsupported EDGE_WEIGHT_FORMAT: " + instance.edge_weight_format +
                     "Supported: FULL_MATRIX, LOWER_DIAG_ROW, UPPER_DIAG_ROW. File: " + filePath
@@ -183,8 +196,9 @@ TSPInstance readTSPInstance(const std::string& filePath) {
             readLowerDiagRow(file, instance);
         } else if (instance.edge_weight_format == "UPPER_DIAG_ROW") {
             readUpperDiagRow(file, instance);
+        } else if (instance.edge_weight_format == "UPPER_ROW") { // Dodano UPPER_ROW
+            readUpperRow(file, instance);
         }
-
         buildSortedNeighbors(instance);
         return instance;
     }
