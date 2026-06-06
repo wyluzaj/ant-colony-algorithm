@@ -332,10 +332,9 @@ ACOSolution runAntColony(
     );
 
     ACOSolution bestSolution;
-    bestSolution.path = nearestNeighborPath(instance, 0);
-    bestSolution.cost = calculatePathCost(instance, bestSolution.path);
+    bestSolution.cost = std::numeric_limits<int>::max();
     bestSolution.optimalCost = optimalCost;
-    bestSolution.relativeError = calculateRelativeError(bestSolution.cost, optimalCost);
+    bestSolution.relativeError = -1.0;
     bestSolution.stopReason = "TimeLimit";
     bestSolution.seed = seed;
     bestSolution.effectiveInitialPheromone = effectiveInitialPheromone;
@@ -382,20 +381,27 @@ ACOSolution runAntColony(
         }
 
         bestSolution.optimalCost = optimalCost;
-        bestSolution.relativeError = calculateRelativeError(bestSolution.cost, optimalCost);
-
+        const int historyBestCost = bestSolution.cost == std::numeric_limits<int>::max()
+                                    ? 0
+                                    : bestSolution.cost;
         const auto currentTime = std::chrono::high_resolution_clock::now();
         bestSolution.history.push_back({
                                                bestSolution.iterations,
                                                elapsedMilliseconds(start, currentTime),
-                                               bestSolution.cost,
+                                               historyBestCost,
                                                bestSolution.relativeError
                                        });
 
-        if (params.stopOnTargetError && bestSolution.relativeError <= params.targetError) {
+        if (!bestSolution.path.empty() &&
+            params.stopOnTargetError &&
+            bestSolution.relativeError <= params.targetError) {
             bestSolution.stopReason = "TargetErrorReached";
             break;
         }
+    }
+
+    if (bestSolution.cost == std::numeric_limits<int>::max()) {
+        bestSolution.cost = 0;
     }
 
     const auto end = std::chrono::high_resolution_clock::now();
